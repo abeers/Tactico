@@ -18,4 +18,12 @@ public class GameBoard : MonoBehaviour
     {
       return Array.IndexOf(cells, cell);
     }
+
+    public void ResetCells()
+    {
+      foreach (GameCell cell in cells)
+      {
+        cell.ResetCell();
+      }
+    }
 }

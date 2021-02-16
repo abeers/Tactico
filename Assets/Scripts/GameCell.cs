@@ -16,6 +16,11 @@ public class GameCell : MonoBehaviour
       index = gameBoard.GetCellIndex(this);
     }
 
+    public int GetCellIndex()
+    {
+      return index;
+    }
+
     public void OnCellClick()
     {
       gameStatus.RegisterClickedCell(this);
@@ -24,7 +29,7 @@ public class GameCell : MonoBehaviour
     public void MarkCell(Player player)
     {
       GetComponent<Button>().enabled = false;
-      UpdateDisplay(player.getPlayerColor());
+      UpdateDisplay(player.GetPlayerColor());
     }
 
     public void ResetCell()
