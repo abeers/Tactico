@@ -26,4 +26,12 @@ public class GameBoard : MonoBehaviour
         cell.ResetCell();
       }
     }
+
+    public void DisableCells()
+    {
+      foreach (GameCell cell in cells)
+      {
+        cell.DisableCell();
+      }
+    }
 }

@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class GameStatus : MonoBehaviour
 {
+    [SerializeField] Text resultText;
     [SerializeField] Player[] players;
     Player currentPlayer;
     GameBoard gameBoard;
@@ -84,6 +85,7 @@ public class GameStatus : MonoBehaviour
       currentPlayer = players[0];
       gameState = new string[9];
       gameBoard.ResetCells();
+      resultText.text = "";
     }
 
     public void RegisterClickedCell(GameCell cell)
@@ -101,11 +103,12 @@ public class GameStatus : MonoBehaviour
 
       if (CheckForWin(cellIndex))
       {
-        Debug.Log(currentPlayer.GetPlayerName() + " wins!");
+        resultText.text = currentPlayer.GetPlayerName() + " wins!";
+        gameBoard.DisableCells();
       }
       else if (CheckForTie())
       {
-        Debug.Log("It's a tie!");
+        resultText.text = "It's a tie!";
       }
     }
 

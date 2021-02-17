@@ -28,7 +28,7 @@ public class GameCell : MonoBehaviour
 
     public void MarkCell(Player player)
     {
-      GetComponent<Button>().enabled = false;
+      DisableCell();
       UpdateDisplay(player.GetPlayerColor());
     }
 
@@ -36,6 +36,11 @@ public class GameCell : MonoBehaviour
     {
       GetComponent<Button>().enabled = true;
       UpdateDisplay(Color.white);
+    }
+
+    public void DisableCell()
+    {
+      GetComponent<Button>().enabled = false;
     }
 
     private void UpdateDisplay(Color color)
