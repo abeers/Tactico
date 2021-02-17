@@ -27,6 +27,14 @@ public class GameBoard : MonoBehaviour
       }
     }
 
+    public void ResetDefenses()
+    {
+      foreach (GameCell cell in cells)
+      {
+        cell.SetIsDefended(false);
+      }
+    }
+
     public void DisableCells()
     {
       foreach (GameCell cell in cells)

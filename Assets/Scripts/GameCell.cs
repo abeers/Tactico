@@ -8,6 +8,7 @@ public class GameCell : MonoBehaviour
     GameStatus gameStatus;
     GameBoard gameBoard;
     int index;
+    bool isDefended = false;
 
     private void Start()
     {
@@ -19,6 +20,16 @@ public class GameCell : MonoBehaviour
     public int GetCellIndex()
     {
       return index;
+    }
+
+    public bool GetIsDefended()
+    {
+      return isDefended;
+    }
+
+    public void SetIsDefended(bool toBeDefended)
+    {
+      isDefended = toBeDefended;
     }
 
     public void OnCellClick()
@@ -36,6 +47,7 @@ public class GameCell : MonoBehaviour
     {
       GetComponent<Button>().enabled = true;
       UpdateDisplay(Color.white);
+      SetIsDefended(false);
     }
 
     public void DisableCell()
