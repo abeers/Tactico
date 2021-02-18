@@ -121,6 +121,8 @@ public class GameStatus : MonoBehaviour
     public void ResetGame()
     {
       currentPlayer = players[0];
+      currentPlayer.SetName(PlayerPrefs.GetString("playerName"));
+      currentPlayer.SetColor(PlayerPrefs.GetInt("playerColor"));
       currentPlayer.BecomeDefender();
       players[1].BecomeAttacker();
       gameState = new string[9];

@@ -4,13 +4,15 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
-    [SerializeField] Color myColor;
+    [SerializeField] Color[] colors;
     [SerializeField] string myName;
+    [SerializeField] int myColor;
+
     private bool isDefending = true;
 
     public Color GetPlayerColor()
     {
-      return myColor;
+      return colors[myColor];
     }
 
     public string GetPlayerName()
@@ -21,6 +23,16 @@ public class Player : MonoBehaviour
     public bool GetIsDefending()
     {
       return isDefending;
+    }
+
+    public void SetName(string name)
+    {
+      myName = name;
+    }
+
+    public void SetColor(int colorIndex)
+    {
+      myColor = colorIndex;
     }
 
     public void BecomeAttacker()
