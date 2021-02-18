@@ -67,10 +67,48 @@ public class GameStatus : MonoBehaviour
       }
     };
 
-    private void Start()
+    public enum GameMode { Normal, Tactico }
+    private GameMode gameMode;
+    private int numGameModes = System.Enum.GetValues(typeof(GameMode)).Length;
+
+    private delegate void UpdateDelegate(GameCell cell);
+    private UpdateDelegate[] UpdateDelegates;
+
+    private delegate void SwapPlayersDelegate();
+    private SwapPlayersDelegate[] SwapPlayersDelegates;
+
+    private delegate void MarkCellDelegate(GameCell cell);
+    private MarkCellDelegate[] MarkCellDelegates;
+
+    private delegate bool CheckWinDelegate(int cellIndex);
+    private CheckWinDelegate[] CheckWinDelegates;
+
+    private delegate bool CheckTieDelegate();
+    private CheckTieDelegate[] CheckTieDelegates;
+
+    void Awake()
     {
-      gameBoard = FindObjectOfType<GameBoard>();
-      ResetGame();
+        UpdateDelegates = new UpdateDelegate[(int)numGameModes];
+        SwapPlayersDelegates = new SwapPlayersDelegate[(int)numGameModes];
+        MarkCellDelegates = new MarkCellDelegate[(int)numGameModes];
+        CheckWinDelegates = new CheckWinDelegate[(int)numGameModes];
+        CheckTieDelegates = new CheckTieDelegate[(int)numGameModes];
+
+        UpdateDelegates[(int)GameMode.Normal] = UpdateNormalState;
+        UpdateDelegates[(int)GameMode.Tactico] = UpdateTacticoState;
+        SwapPlayersDelegates[(int)GameMode.Normal] = SwapPlayersNormal;
+        SwapPlayersDelegates[(int)GameMode.Tactico] = SwapPlayersTactico;
+        MarkCellDelegates[(int)GameMode.Normal] = MarkCellNormal;
+        MarkCellDelegates[(int)GameMode.Tactico] = MarkCellTactico;
+        CheckWinDelegates[(int)GameMode.Normal] = CheckWinNormal;
+        CheckWinDelegates[(int)GameMode.Tactico] = CheckWinTactico;
+        CheckTieDelegates[(int)GameMode.Normal] = CheckTieNormal;
+        CheckTieDelegates[(int)GameMode.Tactico] = CheckTieTactico;
+
+        gameMode = (GameMode)PlayerPrefs.GetInt("gameMode");
+
+        gameBoard = FindObjectOfType<GameBoard>();
+        ResetGame();
     }
 
     // Getters
@@ -83,6 +121,8 @@ public class GameStatus : MonoBehaviour
     public void ResetGame()
     {
       currentPlayer = players[0];
+      currentPlayer.BecomeDefender();
+      players[1].BecomeAttacker();
       gameState = new string[9];
       gameBoard.ResetCells();
       resultText.text = "";
@@ -90,42 +130,94 @@ public class GameStatus : MonoBehaviour
 
     public void RegisterClickedCell(GameCell cell)
     {
-      UpdateGameState(cell);
-      cell.MarkCell(currentPlayer);
-
-      SwapPlayers();
+      UpdateDelegates[(int)gameMode](cell);
+      MarkCellDelegates[(int)gameMode](cell);
+      SwapPlayersDelegates[(int)gameMode]();
     }
 
-    public void UpdateGameState(GameCell cell)
+    public void UpdateNormalState(GameCell cell)
     {
       int cellIndex = cell.GetCellIndex();
       gameState[cellIndex] = currentPlayer.GetPlayerName();
 
-      if (CheckForWin(cellIndex))
+      if (CheckWinDelegates[(int)gameMode](cellIndex))
       {
         resultText.text = currentPlayer.GetPlayerName() + " wins!";
         gameBoard.DisableCells();
       }
-      else if (CheckForTie())
+      else if (CheckTieDelegates[(int)gameMode]())
       {
         resultText.text = "It's a tie!";
       }
     }
 
-    private void SwapPlayers()
+    public void UpdateTacticoState(GameCell cell)
+    {
+      if (!currentPlayer.GetIsDefending() && !cell.GetIsDefended())
+      {
+        UpdateNormalState(cell);
+      }
+    }
+
+    private void SwapPlayersNormal()
     {
       currentPlayer = currentPlayer == players[0] ? players[1] : players[0];
     }
 
-    private bool CheckForWin(int cellIndex)
+    private void SwapPlayersTactico()
+    {
+      if (currentPlayer.GetIsDefending())
+      {
+        currentPlayer.SwapDefending();
+        SwapPlayersNormal();
+      }
+      else
+      {
+        currentPlayer.SwapDefending();
+      }
+    }
+
+    private void MarkCellNormal(GameCell cell)
+    {
+      cell.MarkCell(currentPlayer);
+    }
+
+    private void MarkCellTactico(GameCell cell)
+    {
+      if (currentPlayer.GetIsDefending())
+      {
+        cell.SetIsDefended(true);
+      }
+      else if (!cell.GetIsDefended())
+      {
+        MarkCellNormal(cell);
+        gameBoard.ResetDefenses();
+      }
+      else
+      {
+        gameBoard.ResetDefenses();
+      }
+    }
+
+    private bool CheckWinNormal(int cellIndex)
     {
       int[][] combosToCheck = winningCombosByCell[cellIndex];
       string currentPlayerName = currentPlayer.GetPlayerName();
       return combosToCheck.Any(combo => combo.All(cell => gameState[cell] == currentPlayerName));
     }
 
-    private bool CheckForTie()
+    private bool CheckWinTactico(int cellIndex)
+    {
+      return CheckWinNormal(cellIndex) || gameState.Count<string>(cell => cell == currentPlayer.GetPlayerName()) >= 5;
+    }
+
+    private bool CheckTieNormal()
     {
       return !gameState.Any(cell => cell == null);
+    }
+
+    private bool CheckTieTactico()
+    {
+      return gameState.Count<string>(cell => cell == null) == 1;
     }
 }
