@@ -105,7 +105,7 @@ public class GameStatus : MonoBehaviour
         CheckTieDelegates[(int)GameMode.Normal] = CheckTieNormal;
         CheckTieDelegates[(int)GameMode.Tactico] = CheckTieTactico;
 
-        gameMode = GameMode.Tactico;
+        gameMode = (GameMode)PlayerPrefs.GetInt("gameMode");
 
         gameBoard = FindObjectOfType<GameBoard>();
         ResetGame();
