@@ -59,4 +59,11 @@ public class GameCell : MonoBehaviour
     {
       GetComponent<Image>().color = color;
     }
+
+    public void CopyCell(GameCell cell)
+    {
+      SetIsDefended(cell.GetIsDefended());
+      UpdateDisplay(cell.GetComponent<Image>().color);
+      GetComponent<Button>().enabled = cell.GetComponent<Button>().enabled;
+    }
 }

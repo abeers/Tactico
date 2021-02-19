@@ -1,4 +1,5 @@
-﻿using System.Collections;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +13,7 @@ public class GameStatus : MonoBehaviour
     bool isOver;
     GameBoard gameBoard;
     string[] gameState;
+    int plusMinus;
 
     readonly int[][][] winningCombosByCell = new int[9][][]
     {
@@ -76,9 +78,12 @@ public class GameStatus : MonoBehaviour
     private PlayerMode playerMode;
     private int numPlayerModes = System.Enum.GetValues(typeof(PlayerMode)).Length;
 
+    public enum GameLength { Quick, Warpath }
+    private GameLength gameLength;
+    private int numGameLengths = System.Enum.GetValues(typeof(GameLength)).Length;
 
-    private delegate void UpdateDelegate(GameCell cell);
-    private UpdateDelegate[] UpdateDelegates;
+    private delegate void UpdateStateDelegate(GameCell cell);
+    private UpdateStateDelegate[] UpdateStateDelegates;
 
     private delegate void SwapPlayersDelegate();
     private SwapPlayersDelegate[,] SwapPlayersDelegates;
@@ -92,16 +97,24 @@ public class GameStatus : MonoBehaviour
     private delegate bool CheckTieDelegate();
     private CheckTieDelegate[] CheckTieDelegates;
 
+    private delegate void WinResultDelegate();
+    private WinResultDelegate[] WinResultDelegates;
+
+    private delegate void TieResultDelegate();
+    private TieResultDelegate[] TieResultDelegates;
+
     void Awake()
     {
-        UpdateDelegates = new UpdateDelegate[(int)numGameModes];
+        UpdateStateDelegates = new UpdateStateDelegate[(int)numGameModes];
         SwapPlayersDelegates = new SwapPlayersDelegate[(int)numPlayerModes, (int)numGameModes];
         MarkCellDelegates = new MarkCellDelegate[(int)numGameModes];
         CheckWinDelegates = new CheckWinDelegate[(int)numGameModes];
         CheckTieDelegates = new CheckTieDelegate[(int)numGameModes];
+        WinResultDelegates = new WinResultDelegate[(int)numGameLengths];
+        TieResultDelegates = new TieResultDelegate[(int)numGameLengths];
 
-        UpdateDelegates[(int)GameMode.Normal] = UpdateNormalState;
-        UpdateDelegates[(int)GameMode.Tactico] = UpdateTacticoState;
+        UpdateStateDelegates[(int)GameMode.Normal] = UpdateStateNormal;
+        UpdateStateDelegates[(int)GameMode.Tactico] = UpdateStateTactico;
         SwapPlayersDelegates[(int)PlayerMode.LocalMultiplayer, (int)GameMode.Normal] = SwapPlayersLocalMultiplayerNormal;
         SwapPlayersDelegates[(int)PlayerMode.LocalMultiplayer, (int)GameMode.Tactico] = SwapPlayersLocalMultiplayerTactico;
         SwapPlayersDelegates[(int)PlayerMode.SinglePlayer, (int)GameMode.Normal] = SwapPlayersSinglePlayerNormal;
@@ -112,9 +125,14 @@ public class GameStatus : MonoBehaviour
         CheckWinDelegates[(int)GameMode.Tactico] = CheckWinTactico;
         CheckTieDelegates[(int)GameMode.Normal] = CheckTieNormal;
         CheckTieDelegates[(int)GameMode.Tactico] = CheckTieTactico;
+        WinResultDelegates[(int)GameLength.Quick] = WinResultQuick;
+        WinResultDelegates[(int)GameLength.Warpath] = WinResultWarpath;
+        TieResultDelegates[(int)GameLength.Quick] = TieResultQuick;
+        TieResultDelegates[(int)GameLength.Warpath] = TieResultWarpath;
 
         gameMode = (GameMode)PlayerPrefs.GetInt("gameMode");
         playerMode = (PlayerMode)PlayerPrefs.GetInt("playerMode");
+        gameLength = (GameLength)PlayerPrefs.GetInt("gameLength");
 
         gameBoard = FindObjectOfType<GameBoard>();
         ResetGame();
@@ -132,18 +150,23 @@ public class GameStatus : MonoBehaviour
       currentPlayer = players[0];
       currentPlayer.SetName(PlayerPrefs.GetString("playerName"));
       currentPlayer.SetColor(PlayerPrefs.GetInt("playerColor"));
-      currentPlayer.BecomeDefender();
-      players[1].BecomeAttacker();
-      gameState = new string[9];
+      ResetState();
       gameBoard.ResetCells();
       resultText.text = "";
+
       isOver = false;
+
+      currentPlayer.BecomeDefender();
+      players[1].BecomeAttacker();
+
+      plusMinus = 0;
     }
 
     public void RegisterClickedCell(GameCell cell)
     {
-      UpdateDelegates[(int)gameMode](cell);
       MarkCellDelegates[(int)gameMode](cell);
+      UpdateStateDelegates[(int)gameMode](cell);
+
       if (!isOver)
       {
         SwapPlayersDelegates[(int)playerMode, (int)gameMode]();
@@ -157,29 +180,61 @@ public class GameStatus : MonoBehaviour
       return unoccupiedCells[cellIndex];
     }
 
-    public void UpdateNormalState(GameCell cell)
+    private void ShiftStatePositive()
+    {
+      for (int i = 0; i < gameState.Length; i++)
+      {
+        if (i < gameState.Length - 3)
+        {
+          gameState[i] = gameState[i + 3];
+        }
+        else
+        {
+          gameState[i] = null;
+        }
+      }
+    }
+
+    public void ShiftStateNegative()
+    {
+      for (int i = 0; i < gameState.Length; i++)
+      {
+        if (i > 2)
+        {
+          gameState[i] = gameState[i - 3];
+        }
+        else
+        {
+          gameState[i] = null;
+        }
+      }
+    }
+
+    public void ResetState()
+    {
+      gameState = new string[9];
+    }
+
+    public void UpdateStateNormal(GameCell cell)
     {
       int cellIndex = cell.GetCellIndex();
       gameState[cellIndex] = currentPlayer.GetPlayerName();
 
       if (CheckWinDelegates[(int)gameMode](cellIndex))
       {
-        resultText.text = currentPlayer.GetPlayerName() + " wins!";
-        gameBoard.DisableCells();
-        isOver = true;
+        WinResultDelegates[(int)gameLength]();
       }
       else if (CheckTieDelegates[(int)gameMode]())
       {
-        resultText.text = "It's a tie!";
-        isOver = true;
+        TieResultDelegates[(int)gameLength]();
       }
     }
 
-    public void UpdateTacticoState(GameCell cell)
+    public void UpdateStateTactico(GameCell cell)
     {
       if (!currentPlayer.GetIsDefending() && !cell.GetIsDefended())
       {
-        UpdateNormalState(cell);
+        UpdateStateNormal(cell);
       }
     }
 
@@ -276,5 +331,44 @@ public class GameStatus : MonoBehaviour
     private bool CheckTieTactico()
     {
       return gameState.Count<string>(cell => cell == null) == 1;
+    }
+
+    private void WinResultQuick()
+    {
+      resultText.text = currentPlayer.GetPlayerName() + " wins!";
+      gameBoard.DisableCells();
+      isOver = true;
+    }
+
+    private void WinResultWarpath()
+    {
+      if (Math.Abs(plusMinus) >= 3)
+      {
+        WinResultQuick();
+      }
+      else if (currentPlayer == players[0])
+      {
+        gameBoard.ShiftBoardPositive();
+        ShiftStatePositive();
+        plusMinus++;
+      }
+      else
+      {
+        gameBoard.ShiftBoardNegative();
+        ShiftStateNegative();
+        plusMinus--;
+      }
+    }
+
+    private void TieResultQuick()
+    {
+      resultText.text = "It's a tie!";
+      isOver = true;
+    }
+
+    private void TieResultWarpath()
+    {
+      gameBoard.ResetCells();
+      ResetState();
     }
 }
