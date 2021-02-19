@@ -183,9 +183,14 @@ public class GameStatus : MonoBehaviour
       }
     }
 
-    private void SwapPlayersLocalMultiplayerNormal()
+    private void SwapPlayers()
     {
       currentPlayer = currentPlayer == players[0] ? players[1] : players[0];
+    }
+
+    private void SwapPlayersLocalMultiplayerNormal()
+    {
+      SwapPlayers();
     }
 
     private void SwapPlayersLocalMultiplayerTactico()
@@ -193,7 +198,7 @@ public class GameStatus : MonoBehaviour
       if (currentPlayer.GetIsDefending())
       {
         currentPlayer.SwapDefending();
-        SwapPlayersLocalMultiplayerNormal();
+        SwapPlayers();
       }
       else
       {
@@ -203,7 +208,7 @@ public class GameStatus : MonoBehaviour
 
     private void SwapPlayersSinglePlayerNormal()
     {
-      currentPlayer = currentPlayer == players[0] ? players[1] : players[0];
+      SwapPlayers();
       if (currentPlayer == players[1])
       {
         RegisterClickedCell(GetRandomAISelection());
@@ -215,11 +220,16 @@ public class GameStatus : MonoBehaviour
       if (currentPlayer.GetIsDefending())
       {
         currentPlayer.SwapDefending();
-        SwapPlayersSinglePlayerNormal();
+        SwapPlayers();
       }
       else
       {
         currentPlayer.SwapDefending();
+      }
+
+      if (currentPlayer == players[1])
+      {
+        RegisterClickedCell(GetRandomAISelection());
       }
     }
 
@@ -241,6 +251,7 @@ public class GameStatus : MonoBehaviour
       }
       else
       {
+        Debug.Log("Blocked!");
         gameBoard.ResetDefenses();
       }
     }
