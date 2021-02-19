@@ -42,7 +42,7 @@ public class GameBoard : MonoBehaviour
 
     public void ShiftBoardNegative()
     {
-      for (int i = 0; i < cells.Length; i++)
+      for (int i = cells.Length - 1; i >= 0; i--)
       {
         if (i > 2)
         {

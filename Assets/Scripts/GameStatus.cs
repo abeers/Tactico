@@ -97,7 +97,7 @@ public class GameStatus : MonoBehaviour
     private delegate bool CheckTieDelegate();
     private CheckTieDelegate[] CheckTieDelegates;
 
-    private delegate void WinResultDelegate();
+    private delegate void WinResultDelegate(int cellIndex);
     private WinResultDelegate[] WinResultDelegates;
 
     private delegate void TieResultDelegate();
@@ -197,7 +197,7 @@ public class GameStatus : MonoBehaviour
 
     public void ShiftStateNegative()
     {
-      for (int i = 0; i < gameState.Length; i++)
+      for (int i = gameState.Length - 1; i >=0; i--)
       {
         if (i > 2)
         {
@@ -222,7 +222,7 @@ public class GameStatus : MonoBehaviour
 
       if (CheckWinDelegates[(int)gameMode](cellIndex))
       {
-        WinResultDelegates[(int)gameLength]();
+        WinResultDelegates[(int)gameLength](cellIndex);
       }
       else if (CheckTieDelegates[(int)gameMode]())
       {
@@ -333,30 +333,37 @@ public class GameStatus : MonoBehaviour
       return gameState.Count<string>(cell => cell == null) == 1;
     }
 
-    private void WinResultQuick()
+    private void WinResultQuick(int cellIndex)
     {
       resultText.text = currentPlayer.GetPlayerName() + " wins!";
       gameBoard.DisableCells();
       isOver = true;
     }
 
-    private void WinResultWarpath()
+    private void WinResultWarpath(int cellIndex)
     {
-      if (Math.Abs(plusMinus) >= 3)
+      while (cellIndex >= 0 && cellIndex < gameState.Length && CheckWinDelegates[(int)gameMode](cellIndex))
       {
-        WinResultQuick();
-      }
-      else if (currentPlayer == players[0])
-      {
-        gameBoard.ShiftBoardPositive();
-        ShiftStatePositive();
-        plusMinus++;
-      }
-      else
-      {
-        gameBoard.ShiftBoardNegative();
-        ShiftStateNegative();
-        plusMinus--;
+        Debug.Log(plusMinus);
+        if (Math.Abs(plusMinus) >= 3)
+        {
+          WinResultQuick(cellIndex);
+          break;
+        }
+        else if (currentPlayer == players[0])
+        {
+          gameBoard.ShiftBoardPositive();
+          ShiftStatePositive();
+          plusMinus++;
+          cellIndex -= 3;
+        }
+        else
+        {
+          gameBoard.ShiftBoardNegative();
+          ShiftStateNegative();
+          plusMinus--;
+          cellIndex += 3;
+        }
       }
     }
 
