@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameBoard : MonoBehaviour
 {
@@ -17,6 +18,11 @@ public class GameBoard : MonoBehaviour
     public int GetCellIndex(GameCell cell)
     {
       return Array.IndexOf(cells, cell);
+    }
+
+    public GameCell[] GetUnoccupiedCells()
+    {
+      return cells.Where(cell => cell.GetComponent<Button>().enabled).ToArray<GameCell>();
     }
 
     public void ResetCells()
